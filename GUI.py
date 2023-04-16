@@ -76,12 +76,15 @@ class TextDetectorGUI:
         while not self.stop:
             self.ret, self.frame = self.cap.read()
             gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-            self.thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+            thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
+            self.dilate = cv2.dilate(thresh, kernel, iterations=1)
+    
 
     def update(self):
         while (not self.stop):
             try: 
-                data = pytesseract.image_to_data(self.thresh, output_type=pytesseract.Output.DICT, config="--psm 6", lang="eng")
+                data = pytesseract.image_to_data(self.dilate, output_type=pytesseract.Output.DICT, config="--psm 6", lang="eng")
                 self.frame
             except AttributeError: continue
             words = []
