@@ -4,7 +4,7 @@ import cv2
 import os
 import numpy as np
 import pytesseract
-from detectors.utils import speak
+from detectors.utils import group_words_to_sentences, speak
 
 
 class DetectorGUI:
@@ -52,46 +52,55 @@ class TextDetectorGUI:
         self.camera_label.pack(side=tk.LEFT)
         self.text_frame = tk.Frame(master, width=300, height=480, bg='white')
         self.text_frame.pack(side=tk.RIGHT)
-        # Create the text label inside the frame
         self.text_label = tk.Text(self.text_frame, font=("Helvetica", 16), wrap='word')
         self.text_label.pack(fill=tk.BOTH, expand=1, padx=10, pady=10)
-        # Initialize the camera
         self.cap = cv2.VideoCapture(0)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        self.stop = False
+        self.master.protocol("WM_DELETE_WINDOW", self.on_close)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        # Start the update loop
         self.update()
 
-    def update(self):
-        # Read a frame from the camera
-        ret, frame = self.cap.read()
-        # Convert the frame to grayscale
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        _, thresh = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY)
-        # Apply some morphological operations to the thresholded image
-        kernel = np.ones((5, 5), np.uint8)
-        thresh = cv2.erode(thresh, kernel, iterations=1)
-        thresh = cv2.dilate(thresh, kernel, iterations=1)
-        # Find the contours in the image
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        # Draw the contours on the frame
-        cv2.drawContours(frame, contours, -1, (0, 0, 255), 2)
-        # Get the text from the contours
-        text = ""
-        for contour in contours:
-            x, y, w, h = cv2.boundingRect(contour)
-            roi = thresh[y:y + h, x:x + w]
-            text += pytesseract.image_to_string(roi, config="--psm 11").strip() + "\n"
-        # Update the camera label with the new frame
-        self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame))
-        self.camera_label.configure(image=self.photo)
-        self.camera_label.image = self.photo
-        # Update the text label with the detected text
-        self.text_label.delete(1.0, tk.END)
-        self.text_label.insert(tk.END, text)
-        # Call the update method again after a short delay
-        self.master.after(10, self.update)
 
+    def on_close(self):
+        self.stop = True
+        self.cap.release()
+        self.master.destroy()
+
+    def update(self):
+        while not self.stop:
+            ret, frame = self.cap.read()
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+            data = pytesseract.image_to_data(thresh, output_type=pytesseract.Output.DICT)
+            words = []
+            prev_ss = ""
+            for i in range(len(data['text'])):
+                if int(data['conf'][i]) >= 75:
+                    x = data['left'][i]
+                    y = data['top'][i]
+                    w = data['width'][i]
+                    h = data['height'][i]
+                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    text = data['text'][i]
+                    words.append((x, y, w, h, text))
+            if words:
+                sentences = group_words_to_sentences(words)
+                ss = ' '.join(sentences)
+                print(ss)
+                if prev_ss != ss:
+                    self.text_label.delete(1.0, tk.END)
+                    self.text_label.insert(tk.END, ss)
+                    speak(ss)
+                prev_ss = ss
+            else:
+                self.text_label.delete(1.0, tk.END)
+                self.text_label.insert(tk.END, "No text detected")
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame_rgb))
+            self.camera_label.configure(image=self.photo)
+            self.camera_label.image = self.photo
+            self.master.update()
 
 
 class SaveFaceGUI:

@@ -1,5 +1,7 @@
 import asyncio
 from functools import partial, wraps
+from threading import Thread
+from time import sleep
 import pyttsx3
 
 
@@ -9,8 +11,41 @@ speak_client.setProperty("voices", 'hindi')
 
 
 def speak(text: str) -> None:
+    Thread(target=say, args=(text, ), daemon=True).start()  
+
+def say(text: str):
     speak_client.say(text)
-    speak_client.runAndWait()
+    try:
+        speak_client.runAndWait()
+    except RuntimeError:
+        sleep(5)
+        say(text)
+
+def group_words_to_sentences(words):
+    words = sorted(words, key=lambda w: w[1])
+
+    # Group the words into sentences based on their vertical position
+    sentences = []
+    current_sentence = [words[0]]
+    for i in range(1, len(words)):
+        word = words[i]
+        prev_word = words[i-1]
+        if abs(word[1] - prev_word[1]) > 10:
+            sentences.append(current_sentence)
+            current_sentence = [word]
+        else:
+            current_sentence.append(word)
+    sentences.append(current_sentence)
+
+    # Sort the sentences by their x-coordinate
+    for i in range(len(sentences)):
+        sentences[i] = sorted(sentences[i], key=lambda w: w[0])
+
+    # Convert the words to strings
+    sentences = [[w[4] for w in s] for s in sentences]
+    sentences = [' '.join(s) for s in sentences]
+
+    return sentences
 
 
 def wrap(func):
