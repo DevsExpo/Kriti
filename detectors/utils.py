@@ -8,10 +8,14 @@ import pyttsx3
 speak_client = pyttsx3.init() # we don't wanna waste resources initiating every function call
 speak_client.setProperty("rate", 125)
 speak_client.setProperty("voices", 'hindi')
+threads_list = []
 
 
 def speak(text: str) -> None:
-    Thread(target=say, args=(text, ), daemon=True).start()  
+    thread_speak = Thread(target=say, args=(text, ), daemon=True)
+    thread_speak.start()
+    threads_list.append(thread_speak)
+
 
 def say(text: str):
     speak_client.say(text)

@@ -1,10 +1,11 @@
+from threading import Thread
 import tkinter as tk
 from PIL import Image, ImageTk
 import cv2
 import os
 import numpy as np
 import pytesseract
-from detectors.utils import group_words_to_sentences, speak
+from detectors.utils import group_words_to_sentences, speak, threads_list
 
 
 class DetectorGUI:
@@ -38,7 +39,8 @@ class DetectorGUI:
             self.camera_label.image = image
         
         self.text_label.config(text="Test" if self.text_label.cget("text") == "Nah" else "Nah")
-        self.window.after(self.delay, self.update)
+        #self.window.after(self.delay, self.update)
+        self.window.update()
         
     def start_camera(self):
         self.start_button.pack_forget()
@@ -59,35 +61,45 @@ class TextDetectorGUI:
         self.stop = False
         self.master.protocol("WM_DELETE_WINDOW", self.on_close)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.thread = Thread(target=self.read, args=(), daemon=True)
+        self.thread.start()
         self.update()
 
 
     def on_close(self):
         self.stop = True
+        self.thread.join()
         self.cap.release()
         self.master.destroy()
 
-    def update(self):
+    def read(self):
         while not self.stop:
-            ret, frame = self.cap.read()
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-            data = pytesseract.image_to_data(thresh, output_type=pytesseract.Output.DICT)
+            self.ret, self.frame = self.cap.read()
+            gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
+            self.thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+
+    def update(self):
+        while (not self.stop):
+            try: 
+                data = pytesseract.image_to_data(self.thresh, output_type=pytesseract.Output.DICT, config="--psm 6", lang="eng")
+                self.frame
+            except AttributeError: continue
             words = []
             prev_ss = ""
             for i in range(len(data['text'])):
-                if int(data['conf'][i]) >= 75:
+                if int(data['conf'][i]) > 55:
                     x = data['left'][i]
                     y = data['top'][i]
                     w = data['width'][i]
                     h = data['height'][i]
-                    cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
                     text = data['text'][i]
                     words.append((x, y, w, h, text))
             if words:
                 sentences = group_words_to_sentences(words)
-                ss = ' '.join(sentences)
-                print(ss)
+                ss = ""
+                for sentence in sentences:
+                    ss += sentence + "\n"
                 if prev_ss != ss:
                     self.text_label.delete(1.0, tk.END)
                     self.text_label.insert(tk.END, ss)
@@ -96,7 +108,7 @@ class TextDetectorGUI:
             else:
                 self.text_label.delete(1.0, tk.END)
                 self.text_label.insert(tk.END, "No text detected")
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame_rgb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
             self.photo = ImageTk.PhotoImage(image=Image.fromarray(frame_rgb))
             self.camera_label.configure(image=self.photo)
             self.camera_label.image = self.photo
