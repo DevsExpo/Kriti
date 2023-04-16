@@ -1,12 +1,9 @@
-import asyncio
-from functools import partial, wraps
-import os
 from keras.models import load_model
 import numpy as np
 from PIL import Image
 
 
-prediction_class = {
+predict_classes = {
     0: "Speed limit (20km/h)",
     1: "Speed limit (30km/h)",
     2: "Speed limit (50km/h)",
@@ -49,21 +46,25 @@ prediction_class = {
     39: "Keep left",
     40: "Roundabout mandatory",
     41: "End of no passing",
-    42: "End of no passing by vehicles over 3.5 metric tons"
+    42: "End of no passing by vehicles over 3.5 metric tons",
+    43: "Unknown"
 }
 
-loaded_model = load_model(os.path.join(os.path.dirname(__file__), "model.h5"))
 
-
-async def image_processing(image_array):
-    image = Image.fromarray(image_array)
-    image = image.resize((30, 30))
-    image = np.expand_dims(image, axis=0)
-    img_array = [np.array(image)]
-    X_test = np.array(img_array)
-    Y_pred = loaded_model.predict(X_test)
-    return Y_pred
+async def image_processing(img):
+    model = load_model('./models/TSR.h5')
+    data=[]
+    image = Image.fromarray(img)
+    image = image.resize((30,30))
+    data.append(np.array(image))
+    X_test=np.array(data)
+    Y_pred =  np.argmax(model.predict(X_test))
+    try:
+        return Y_pred
+    except Exception as e:
+        print(e)
+        return 43
 
 async def predict(array):
-    return prediction_class[await image_processing(array)]
+    return predict_classes[await image_processing(array)]
 

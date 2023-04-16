@@ -4,13 +4,13 @@ import pyttsx3
 
 
 speak_client = pyttsx3.init() # we don't wanna waste resources initiating every function call
+speak_client.setProperty("rate", 125)
+speak_client.setProperty("voices", 'hindi')
+
 
 def speak(text: str) -> None:
-    speak_client.say(text, "warning")
+    speak_client.say(text)
     speak_client.runAndWait()
-
-
-speak('hello')
 
 
 def wrap(func):
