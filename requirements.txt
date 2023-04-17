@@ -2,3 +2,9 @@ ultralytics
 pillow
 tensorflow
 torch
+pyttsx3
+numpy
+opencv-contrib-python
+face_recognition
+pytesseract
+keras
