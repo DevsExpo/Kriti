@@ -1,7 +1,6 @@
-from keras.models import load_model
 import numpy as np
+from keras.models import load_model
 from PIL import Image
-
 
 predict_classes = {
     0: "Speed limit (20km/h)",
@@ -47,24 +46,24 @@ predict_classes = {
     40: "Roundabout mandatory",
     41: "End of no passing",
     42: "End of no passing by vehicles over 3.5 metric tons",
-    43: "Unknown"
+    43: "Unknown",
 }
 
 
 async def image_processing(img):
-    model = load_model('./models/TSR.h5')
-    data=[]
+    model = load_model("./models/TSR.h5")
+    data = []
     image = Image.fromarray(img)
-    image = image.resize((30,30))
+    image = image.resize((30, 30))
     data.append(np.array(image))
-    X_test=np.array(data)
-    Y_pred =  np.argmax(model.predict(X_test))
+    X_test = np.array(data)
+    Y_pred = np.argmax(model.predict(X_test))
     try:
         return Y_pred
     except Exception as e:
         print(e)
         return 43
 
+
 async def predict(array):
     return predict_classes[await image_processing(array)]
-
