@@ -92,7 +92,7 @@ class TextDetectorGUI:
                 data = pytesseract.image_to_data(
                     self.dilate,
                     output_type=pytesseract.Output.DICT,
-                    config="--psm 6",
+                    config="--oem 3 --psm 6",
                     lang="eng",
                 )
                 self.frame
