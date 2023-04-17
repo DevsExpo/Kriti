@@ -194,6 +194,9 @@ class ProjectKritiGUI:
         self.bg_image = ImageTk.PhotoImage(Image.open("./Images/bg.jpg"))
         self.logo = tk.PhotoImage(file="./Images/logo.png")
 
+        def report_callback_exception(self, exc, val, tb):
+            messagebox.showerror("Error!", f"{exc}: {val}")
+
         # Create the background label
         self.bg_label = tk.Label(master, image=self.bg_image)
         self.bg_label.place(relwidth=1, relheight=1)
