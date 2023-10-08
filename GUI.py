@@ -111,9 +111,7 @@ class TextDetectorGUI:
                     words.append((x, y, w, h, text))
             if words:
                 sentences = group_words_to_sentences(words)
-                ss = ""
-                for sentence in sentences:
-                    ss += sentence + "\n"
+                ss = "".join(sentence + "\n" for sentence in sentences)
                 if prev_ss != ss:
                     self.text_label.delete(1.0, tk.END)
                     self.text_label.insert(tk.END, ss)
@@ -165,16 +163,14 @@ class SaveFaceGUI:
         if name == "":
             tk.messagebox.showerror("Error", "Please enter a name.")
             return
-        filename = os.path.join("./known_faces/", name + ".jpg")
+        filename = os.path.join("./known_faces/", f"{name}.jpg")
         if os.path.exists(filename):
             return tk.messagebox.showerror(
                 "Error", "A face with this name already exists."
             )
-        # Show a pop-up message
-        resp = tk.messagebox.askokcancel(
+        if resp := tk.messagebox.askokcancel(
             "Cheese", "Smile for the camera! Click OK to click and image."
-        )
-        if resp:
+        ):
             ret, frame = self.cap.read()
             if ret:
                 cv2.imwrite(filename, frame)

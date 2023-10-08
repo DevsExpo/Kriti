@@ -50,9 +50,7 @@ def group_words_to_sentences(words):
 
     # Convert the words to strings
     sentences = [[w[4] for w in s] for s in sentences]
-    sentences = [" ".join(s) for s in sentences]
-
-    return sentences
+    return [" ".join(s) for s in sentences]
 
 
 def wrap(func):

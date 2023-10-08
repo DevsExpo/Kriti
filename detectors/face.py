@@ -10,10 +10,10 @@ data_dir = os.path.expanduser("./data")
 faces_folder_path = "./known_faces/"
 dlib_frontal_face_detector = dlib.get_frontal_face_detector()
 shape_predictor = dlib.shape_predictor(
-    data_dir + "/shape_predictor_68_face_landmarks.dat"
+    f"{data_dir}/shape_predictor_68_face_landmarks.dat"
 )
 face_recognition_model = dlib.face_recognition_model_v1(
-    data_dir + "/dlib_face_recognition_resnet_model_v1.dat"
+    f"{data_dir}/dlib_face_recognition_resnet_model_v1.dat"
 )
 face_detector = dlib.get_frontal_face_detector()
 
@@ -40,7 +40,7 @@ def find_match(known_faces, person_names, face):
     if min_value < 0.58:
         return person_names[min_index] + " ({0:.2f})".format(min_value)
     if min_value < 0.65:
-        return person_names[min_index] + "?" + " ({0:.2f})".format(min_value)
+        return f"{person_names[min_index]}?" + " ({0:.2f})".format(min_value)
     return "Not Found"
 
 
@@ -77,7 +77,7 @@ face_encodings, person_names = load_face_encodings(faces_folder_path)
 
 def recognize_faces_in_frame(frame):
     faceClassifier = cv2.CascadeClassifier(
-        data_dir + "/haarcascade_frontalface_default.xml"
+        f"{data_dir}/haarcascade_frontalface_default.xml"
     )
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     face_rects = faceClassifier.detectMultiScale(
@@ -89,8 +89,7 @@ def recognize_faces_in_frame(frame):
     )
     for x, y, w, h in face_rects:
         cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
-        face_encodings_in_image = get_face_encodings(frame)
-        if face_encodings_in_image:
+        if face_encodings_in_image := get_face_encodings(frame):
             match = find_match(face_encodings, person_names, face_encodings_in_image[0])
             cv2.putText(
                 frame,
