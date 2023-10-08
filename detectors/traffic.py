@@ -52,10 +52,9 @@ predict_classes = {
 
 async def image_processing(img):
     model = load_model("./models/TSR.h5")
-    data = []
     image = Image.fromarray(img)
     image = image.resize((30, 30))
-    data.append(np.array(image))
+    data = [np.array(image)]
     X_test = np.array(data)
     Y_pred = np.argmax(model.predict(X_test))
     try:
